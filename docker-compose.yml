@@ -7,6 +7,8 @@ services:
     volumes:
       - ./config.rb:/etc/gollum/config.rb
       - ./wiki:/wiki
+      # Maybe a terrible plan. This makes the submodule work
+      - ./.git/modules/wiki:/.git/modules/wiki
     ports:
       - 4567:4567
     labels:
