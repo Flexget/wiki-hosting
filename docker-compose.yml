@@ -1,0 +1,14 @@
+services:
+  gollum:
+    build: .
+    container_name: gollum
+    command:
+      - "--config=/etc/gollum/config.rb"
+    volumes:
+      - ./config.rb:/etc/gollum/config.rb
+      - ./wiki:/wiki
+    ports:
+      - 4567:4567
+    labels:
+      - "traefik.http.routers.gollum.rule=Host(`flexget.com`)"
+    #restart: unless-stopped
