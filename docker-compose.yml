@@ -1,16 +1,46 @@
+version: "3"
 services:
-  gollum:
-    build: .
-    container_name: gollum
-    command:
-      - "--config=/etc/gollum/config.rb"
+  db:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_DB:
+      POSTGRES_PASSWORD:
+      POSTGRES_USER:
+    logging:
+      driver: "none"
+    restart: unless-stopped
     volumes:
-      - ./config.rb:/etc/gollum/config.rb
-      - ./wiki:/wiki
-      # Maybe a terrible plan. This makes the submodule work
-      - ./.git/modules/wiki:/.git/modules/wiki
-    ports:
-      - 4567:4567
+      - db-data:/var/lib/postgresql/data
+  wiki:
+    image: ghcr.io/requarks/wiki:2
+    depends_on:
+      - db
+    environment:
+      DB_TYPE: postgres
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER}
+      DB_PASS: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+    restart: unless-stopped
+#    ports:
+#      - "3000:3000"
     labels:
-      - "traefik.http.routers.gollum.rule=Host(`flexget.com`)"
-    #restart: unless-stopped
+      - "traefik.enable=true"
+      - "traefik.http.routers.wikijs.rule=PathPrefix(`/`)||Host(`flexget.gazpachoking.net`)||Host(`flexget.com`)||Host(`www.flexget.com`)"
+      - "traefik.http.routers.wikijs.entrypoints=web"
+  traefik:
+    image: "traefik:v2.8"
+    command:
+      #- "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+volumes:
+  db-data:
