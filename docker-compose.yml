@@ -22,13 +22,17 @@ services:
       DB_USER: ${POSTGRES_USER}
       DB_PASS: ${POSTGRES_PASSWORD}
       DB_NAME: ${POSTGRES_DB}
+    volumes:
+      - ./favicons/favicon.ico:/wiki/assets/favicon.ico
     restart: unless-stopped
 #    ports:
 #      - "3000:3000"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.wikijs.rule=PathPrefix(`/`)||Host(`flexget.gazpachoking.net`)||Host(`flexget.com`)||Host(`www.flexget.com`)"
-      - "traefik.http.routers.wikijs.entrypoints=web"
+      - "traefik.http.routers.wikijs.rule=Host(`flexget.gazpachoking.net`)||Host(`flexget.com`)||Host(`www.flexget.com`)"
+      - "traefik.http.routers.wikijs.tls=true"
+      - "traefik.http.routers.wikijs.tls.certresolver=le"
+      - "traefik.http.routers.wikijs.entrypoints=websecure"
   traefik:
     image: "traefik:v2.8"
     command:
@@ -37,10 +41,28 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.le.acme.email=${TRAEFIK_SSLEMAIL?Variable not set}"
+      - "--certificatesresolvers.le.acme.storage=acme.json"
+      - "--certificatesresolvers.le.acme.tlschallenge=true"
+      # staging server
+      - "--certificatesresolvers.le.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+      # production server
+      #- "--certificatesresolvers.le.acme.caserver=https://acme-v02.api.letsencrypt.org/directory"
     ports:
       - "80:80"
+      - "443:443"
       - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./acme.json:/acme.json"
+    labels:
+      # global redirect to https
+      - "traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)"
+      - "traefik.http.routers.http-catchall.entrypoints=web"
+      - "traefik.http.routers.http-catchall.middlewares=redirect-to-https"
+      # middleware redirect
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+    restart: unless-stopped
 volumes:
   db-data:
