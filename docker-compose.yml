@@ -29,8 +29,7 @@ services:
 #      - "3000:3000"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.wikijs.rule=Host(`flexget.gazpachoking.net`)"
-      #- "traefik.http.routers.wikijs.rule=Host(`flexget.com`)||Host(`www.flexget.com`)"
+      - "traefik.http.routers.wikijs.rule=Host(`flexget.gazpachoking.net`)||Host(`flexget.com`)||Host(`www.flexget.com`)"
       - "traefik.http.routers.wikijs.tls=true"
       - "traefik.http.routers.wikijs.tls.certresolver=le-prod"
       - "traefik.http.routers.wikijs.entrypoints=websecure"
